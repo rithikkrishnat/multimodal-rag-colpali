@@ -1,0 +1,13 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore environment variables / secrets
+.env
+
+# Ignore processed image outputs to keep the repo lightweight
+processed_images/
+
+# Ignore the actual PDF to avoid copyright/size issues
+sample_report.pdf
+*.pdf

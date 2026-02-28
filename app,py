@@ -1,0 +1,93 @@
+import gradio as gr
+import torch
+import os
+from PIL import Image
+from qdrant_client import QdrantClient
+from colpali_engine.models import ColQwen2, ColQwen2Processor
+
+# Configuration
+MODEL_NAME = "vidore/colqwen2-v0.1"
+COLLECTION_NAME = "financial_documents"
+IMAGE_DIR = "processed_images"
+
+print("Starting Web App... Loading AI Model (This takes about 30 seconds)...")
+device = "cuda" if torch.cuda.is_available() else "cpu"
+dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32 
+
+# Load the model globally so it doesn't reload on every search
+model = ColQwen2.from_pretrained(MODEL_NAME, torch_dtype=dtype, device_map=device).eval()
+processor = ColQwen2Processor.from_pretrained(MODEL_NAME)
+client = QdrantClient(url="http://localhost:6333")
+print("✅ Model loaded! Launching User Interface...")
+
+def search_documents(query_text):
+    """Takes the user's text, searches the database, and returns the actual images."""
+    if not query_text.strip():
+        return []
+
+    print(f"User searched for: {query_text}")
+    
+    # 1. Embed the user's question
+    inputs = processor.process_queries([query_text]).to(device)
+    with torch.no_grad():
+        query_embeddings = model(**inputs)
+    query_vector = query_embeddings[0].cpu().float().numpy().tolist()
+
+    # 2. Search the Qdrant Database
+    search_results = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=query_vector,
+        limit=3  # Fetch the top 3 best matches
+    )
+
+    # 3. Fetch the actual images to show in the UI
+    output_images = []
+    for result in search_results.points:
+        filename = result.payload.get("filename")
+        score = result.score
+        page_num = result.payload.get("page_number")
+        
+        img_path = os.path.join(IMAGE_DIR, filename)
+        
+        # If the image exists, add it to our Gallery results
+        if os.path.exists(img_path):
+            img = Image.open(img_path)
+            # Gradio takes a tuple of (Image, "Caption text")
+            caption = f"Page {page_num} (Match Score: {score:.3f})"
+            output_images.append((img, caption))
+            
+    return output_images
+
+# ==========================================
+# Build the Gradio User Interface
+# ==========================================
+with gr.Blocks(theme=gr.themes.Soft(), title="ColPali Search Engine") as demo:
+    gr.Markdown("# 📄 ColPali: OCR-Free Financial Document Retrieval")
+    gr.Markdown("Ask a question about your indexed document. The Vision-Language Model will mathematically match your query to the visual layout of the page, completely bypassing OCR.")
+    
+    with gr.Row():
+        with gr.Column(scale=1):
+            query_input = gr.Textbox(
+                label="Enter your search query:", 
+                placeholder="e.g., What is the total revenue shown in the bar chart?",
+                lines=2
+            )
+            search_btn = gr.Button("🔍 Search Document", variant="primary")
+        
+    with gr.Row():
+        # A gallery layout to display the images side-by-side
+        output_gallery = gr.Gallery(
+            label="Top Matching Pages", 
+            columns=3, 
+            height="auto",
+            object_fit="contain"
+        )
+
+    # Connect the button to the search function
+    search_btn.click(fn=search_documents, inputs=query_input, outputs=output_gallery)
+    # Also allow pressing 'Enter' on the keyboard to trigger the search
+    query_input.submit(fn=search_documents, inputs=query_input, outputs=output_gallery)
+
+if __name__ == "__main__":
+    # Launch the web app!
+    demo.launch(server_port=7860, share=False)
