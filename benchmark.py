@@ -2,11 +2,11 @@ import torch
 import math
 import time
 from qdrant_client import QdrantClient
-from colpali_engine.models import ColQwen2, ColQwen2Processor
+from colpali_engine.models import ColPali, ColPaliProcessor
 
 # --- Configuration ---
-MODEL_NAME = "vidore/colqwen2-v0.1"
-COLLECTION_NAME = "financial_documents"
+MODEL_NAME = "vidore/colpali-v1.2"
+COLLECTION_NAME = "colpali_pdf_index"
 
 # --- 1. The Golden Dataset (Ground Truth) ---
 # I mapped these directly to the actual pages in your sample_report.pdf!
@@ -21,10 +21,10 @@ GROUND_TRUTH = {
 def load_ai_model():
     print("Loading AI Model for Benchmarking...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32 
+    dtype = torch.bfloat16
     
-    model = ColQwen2.from_pretrained(MODEL_NAME, torch_dtype=dtype, device_map=device).eval()
-    processor = ColQwen2Processor.from_pretrained(MODEL_NAME)
+    model = ColPali.from_pretrained(MODEL_NAME, torch_dtype=dtype, device_map=device).eval()
+    processor = ColPaliProcessor.from_pretrained(MODEL_NAME)
     client = QdrantClient(url="http://localhost:6333")
     
     return model, processor, client, device

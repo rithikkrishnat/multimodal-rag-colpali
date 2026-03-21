@@ -4,7 +4,7 @@ from qdrant_client.http import models
 def initialize_qdrant_collection():
     # 1. Connect to the local Qdrant instance
     client = QdrantClient(url="http://localhost:6333")
-    collection_name = "financial_documents"
+    collection_name = "colpali_pdf_index"
 
     # 2. Check if the collection already exists to prevent overwriting data
     if client.collection_exists(collection_name=collection_name):

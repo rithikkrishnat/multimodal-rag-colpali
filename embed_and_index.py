@@ -5,12 +5,12 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
 # 1. Import from the official colpali_engine instead of transformers
-from colpali_engine.models import ColQwen2, ColQwen2Processor
+from colpali_engine.models import ColPali, ColPaliProcessor
 
-# 2. Use the open-source, higher-performing ColQwen2 model (No Hugging Face token required!)
-MODEL_NAME = "vidore/colqwen2-v0.1" 
+# 2. Use the ColPali model repository
+MODEL_NAME = "vidore/colpali-v1.2"
 IMAGE_DIR = "processed_images"
-COLLECTION_NAME = "financial_documents"
+COLLECTION_NAME = "colpali_pdf_index"
 BATCH_SIZE = 1 # Process 1 page at a time to protect your CPU's RAM
 
 def load_model():
@@ -18,16 +18,16 @@ def load_model():
     
     # Safely fallback to CPU since you don't have a dedicated Nvidia GPU
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32 
+    dtype = torch.bfloat16
     print(f"Using device: {device.upper()}")
     
-    model = ColQwen2.from_pretrained(
+    model = ColPali.from_pretrained(
         MODEL_NAME, 
         torch_dtype=dtype, 
         device_map=device
     ).eval()
     
-    processor = ColQwen2Processor.from_pretrained(MODEL_NAME)
+    processor = ColPaliProcessor.from_pretrained(MODEL_NAME)
     return model, processor, device
 
 def embed_and_store():
