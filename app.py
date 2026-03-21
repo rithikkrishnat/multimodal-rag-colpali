@@ -28,7 +28,7 @@ st.markdown("ColPali retrieves the exact visual page, and Gemini reads the image
 @st.cache_resource(show_spinner=False)
 def load_ai_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
     
     model = ColPali.from_pretrained(MODEL_NAME, torch_dtype=dtype, device_map=device).eval()
     processor = ColPaliProcessor.from_pretrained(MODEL_NAME)

@@ -18,7 +18,7 @@ def load_model():
     
     # Safely fallback to CPU since you don't have a dedicated Nvidia GPU
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
     print(f"Using device: {device.upper()}")
     
     model = ColPali.from_pretrained(

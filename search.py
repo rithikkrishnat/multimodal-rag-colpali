@@ -9,7 +9,7 @@ COLLECTION_NAME = "colpali_pdf_index"
 def load_model():
     print("Loading AI Model for Search...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
     
     # Loads from your local cache, so no 5GB download this time!
     model = ColPali.from_pretrained(
