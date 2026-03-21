@@ -3,14 +3,14 @@ import torch
 import os
 from PIL import Image
 from qdrant_client import QdrantClient
-from colpali_engine.models import ColQwen2, ColQwen2Processor
+from colpali_engine.models import ColPali, ColPaliProcessor
 
 # 1. Import the NEW official Google SDK
 from google import genai 
 
 # --- Configuration ---
-MODEL_NAME = "vidore/colqwen2-v0.1"
-COLLECTION_NAME = "financial_documents"
+MODEL_NAME = "vidore/colpali-v1.2"
+COLLECTION_NAME = "colpali_pdf_index"
 IMAGE_DIR = "processed_images"
 
 # ⚠️ PASTE YOUR GEMINI API KEY HERE ⚠️
@@ -28,10 +28,10 @@ st.markdown("ColPali retrieves the exact visual page, and Gemini reads the image
 @st.cache_resource(show_spinner=False)
 def load_ai_model():
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32 
+    dtype = torch.bfloat16
     
-    model = ColQwen2.from_pretrained(MODEL_NAME, torch_dtype=dtype, device_map=device).eval()
-    processor = ColQwen2Processor.from_pretrained(MODEL_NAME)
+    model = ColPali.from_pretrained(MODEL_NAME, torch_dtype=dtype, device_map=device).eval()
+    processor = ColPaliProcessor.from_pretrained(MODEL_NAME)
     client = QdrantClient(url="http://localhost:6333")
     
     return model, processor, client, device
@@ -46,7 +46,7 @@ query_text = st.text_input("🔍 Ask a question about your document:", placehold
 if st.button("Generate Answer", type="primary"):
     if query_text.strip():
         
-        # --- PHASE 1: RETRIEVAL (ColQwen2) ---
+        # --- PHASE 1: RETRIEVAL (ColPali) ---
         with st.spinner("ColPali is scanning the document layout..."):
             inputs = processor.process_queries([query_text]).to(device)
             with torch.no_grad():

@@ -1,24 +1,24 @@
 import torch
 from qdrant_client import QdrantClient
-from colpali_engine.models import ColQwen2, ColQwen2Processor
+from colpali_engine.models import ColPali, ColPaliProcessor
 
 # Configuration
-MODEL_NAME = "vidore/colqwen2-v0.1"
-COLLECTION_NAME = "financial_documents"
+MODEL_NAME = "vidore/colpali-v1.2"
+COLLECTION_NAME = "colpali_pdf_index"
 
 def load_model():
     print("Loading AI Model for Search...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32 
+    dtype = torch.bfloat16
     
     # Loads from your local cache, so no 5GB download this time!
-    model = ColQwen2.from_pretrained(
+    model = ColPali.from_pretrained(
         MODEL_NAME, 
         torch_dtype=dtype, 
         device_map=device
     ).eval()
     
-    processor = ColQwen2Processor.from_pretrained(MODEL_NAME)
+    processor = ColPaliProcessor.from_pretrained(MODEL_NAME)
     return model, processor, device
 
 def search_database(query_text):
@@ -35,7 +35,7 @@ def search_database(query_text):
     with torch.no_grad():
         query_embeddings = model(**inputs)
         
-    # ColQwen returns a tensor, we need the first one (since we only asked 1 question)
+    # ColPali returns a tensor, we need the first one (since we only asked 1 question)
     query_vector = query_embeddings[0].cpu().float().numpy().tolist()
     
     print("Scanning document pages using Late Interaction (MaxSim)...")
@@ -71,5 +71,4 @@ if __name__ == "__main__":
     my_question = "explain structure of a national isp"
     
     search_database(my_question)
-
 
